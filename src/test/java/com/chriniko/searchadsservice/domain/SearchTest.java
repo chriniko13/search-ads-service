@@ -39,7 +39,7 @@ class SearchTest {
             assertEquals(searchText, search.getSearchText());
             assertEquals(pageSize, search.getPagedAds().getPageSize());
 
-            assertEquals(Double.valueOf(Math.ceil( (double)numberOfResults / pageSize)).intValue(), search.getPagedAds().getTotalPages());
+            assertEquals(Math.ceil( (double)numberOfResults / pageSize), search.getPagedAds().getTotalPages());
 
             assertNotNull(search.getCreatedAt());
             assertNotNull(search.getSearchId());

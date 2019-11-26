@@ -5,7 +5,6 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Getter
@@ -21,7 +20,7 @@ public class PagedAds {
         this.ads = new ArrayList<>(totalPages);
     }
 
-    public Set<String> allAdIds() {
-        return ads.stream().flatMap(Collection::stream).map(Ad::getId).collect(Collectors.toSet());
+    public List<String> allAdIds() {
+        return ads.stream().flatMap(Collection::stream).map(Ad::getId).collect(Collectors.toList());
     }
 }

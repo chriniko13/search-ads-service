@@ -23,7 +23,7 @@ public class Search {
 
         this.numberOfResults = Math.max(50, rnd.nextInt(500));
 
-        int totalPages = Double.valueOf(Math.ceil((double) numberOfResults / pageSize)).intValue();
+        int totalPages = (int) Math.ceil((double) numberOfResults / pageSize);
 
         int[] adsPerPage = getAdsPerPage(pageSize, totalPages);
 

@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/search-ads")
@@ -31,7 +30,7 @@ public class SearchAdsResource {
         this.adEventTriggerService = adEventTriggerService;
     }
 
-    // Note: this operation implicitly fires: {AdIncludedInSearchProcessEvent.java}.
+    // Note: this operation implicitly fires: {AdIncludedInSearchProcessEvent.java} == included event.
     @PostMapping(
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -42,7 +41,7 @@ public class SearchAdsResource {
         Search search = adSearchService.process(text);
 
         PagedAds pagedAds = search.getPagedAds();
-        Set<String> allAdIds = pagedAds.allAdIds();
+        List<String> allAdIds = pagedAds.allAdIds();
         adEventTriggerService.adsIncluded(allAdIds);
 
         return ResponseEntity.ok(pagedAds);

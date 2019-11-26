@@ -1,6 +1,6 @@
 package com.chriniko.searchadsservice.client;
 
-public class ClientTestSimulator {
+public class NaiveTortureTest {
 
     public static void main(String[] args) {
 

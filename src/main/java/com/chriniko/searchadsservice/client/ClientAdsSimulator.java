@@ -28,7 +28,6 @@ public class ClientAdsSimulator {
         currentDisplayedPage = 0;
     }
 
-
     public void clicked(String adId) {
         notify(Collections.singletonList(adId), AdEvent.CLICKED);
     }
@@ -53,7 +52,7 @@ public class ClientAdsSimulator {
 
         currentDisplayedPage--;
         currentDisplayedAds = this.pagedAds.getAds().get(currentDisplayedPage);
-        // Important Note: we do not fire again events - business constraint.
+        // Important Note: we have visited this page, so we do not fire again events - business constraint.
     }
 
     private void notify(List<String> adIds, AdEvent adEvent) {

@@ -31,6 +31,11 @@ public class KafkaAdEventProducer implements AdEventProducer {
 
         this.producer = new KafkaProducer<>(properties);
         this.topic = "ad_events";
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.debug("shutting down kafka ad-events producer...");
+            producer.close();
+        }));
     }
 
     @Override

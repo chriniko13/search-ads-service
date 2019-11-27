@@ -1,5 +1,6 @@
 package com.chriniko.searchadsservice.event;
 
+import com.chriniko.searchadsservice.domain.AdClickSource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,20 @@ class AdEventTest {
         JsonNode eventTypeJson = mapper.readTree(adClickedEventSerialized).get("event-type");
         assertEquals("clicked", eventTypeJson.asText());
         assertEquals(AdClickedEvent.class, mapper.readValue(adClickedEventSerialized, AdEvent.class).getClass());
+
+
+        // when
+        String adClickedEventSerializedMail = mapper.writeValueAsString(new AdClickedEvent(adId, AdClickSource.MAIL_CAMPAIGN));
+
+        // then
+        JsonNode adClickedEventSerializerMailJsonNode = mapper.readTree(adClickedEventSerializedMail);
+
+        eventTypeJson = adClickedEventSerializerMailJsonNode.get("event-type");
+        assertEquals("clicked", eventTypeJson.asText());
+
+        assertEquals("MAIL_CAMPAIGN", adClickedEventSerializerMailJsonNode.get("source").asText());
+
+        assertEquals(AdClickedEvent.class, mapper.readValue(adClickedEventSerializedMail, AdEvent.class).getClass());
 
 
 

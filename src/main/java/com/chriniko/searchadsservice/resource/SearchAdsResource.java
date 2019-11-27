@@ -52,12 +52,13 @@ public class SearchAdsResource {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @RequestMapping("/clicked")
-    public @ResponseBody HttpEntity<Void> fireAdClickedEvent(@RequestBody @Valid AdClickedRequest req) {
+    public @ResponseBody HttpEntity<Void> fireAdClickedEvent(@RequestBody @Valid AdClickedRequest req,
+                                                             @RequestParam(name = "campaignUrl", required = false) String campaignUrl) {
 
         @NotEmpty String adId = req.getAdId();
         adSearchService.isValidAdId(adId);
 
-        adEventTriggerService.adClicked(adId);
+        adEventTriggerService.adClicked(adId, campaignUrl);
 
         return ResponseEntity.ok().build();
     }

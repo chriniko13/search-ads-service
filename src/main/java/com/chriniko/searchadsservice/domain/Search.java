@@ -56,7 +56,7 @@ public class Search {
     private void populateAds(String searchText, int pageSize, int totalPages, int[] adsPerPage) {
         for (int i = 0; i < totalPages; i++) {
 
-            List<Ad> ads = new ArrayList<>(pageSize);
+            List<Ad> ads = new ArrayList<>(adsPerPage[i]);
 
             for (int k = 0; k < adsPerPage[i]; k++) {
                 ads.add(new Ad(searchText));

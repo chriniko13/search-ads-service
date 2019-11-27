@@ -14,7 +14,6 @@ public class AdSearchService {
 
     private static final int PAGE_SIZE = 10;
 
-    // Note: this maps are used more for auditing - proof of concept - testing.
     @Getter
     private final ConcurrentHashMap<String /*searchId*/, Search> searchesBySearchId;
 

@@ -1,5 +1,6 @@
 package com.chriniko.searchadsservice.service;
 
+import com.chriniko.searchadsservice.domain.AdClickSource;
 import com.chriniko.searchadsservice.event.AdAppearedOnSearchResultEvent;
 import com.chriniko.searchadsservice.event.AdClickedEvent;
 import com.chriniko.searchadsservice.event.AdIncludedInSearchProcessEvent;
@@ -22,8 +23,10 @@ public class AdEventTriggerService {
         this.adEventProducer = adEventProducer;
     }
 
-    public void adClicked(String adId) {
-        AdClickedEvent event = new AdClickedEvent(adId);
+    public void adClicked(String adId, String campaignUrl) {
+        AdClickedEvent event = campaignUrl == null
+                ? new AdClickedEvent(adId)
+                : new AdClickedEvent(adId, AdClickSource.MAIL_CAMPAIGN);
         adEventProducer.send(event);
     }
 

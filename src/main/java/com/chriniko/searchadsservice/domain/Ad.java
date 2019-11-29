@@ -1,6 +1,7 @@
 package com.chriniko.searchadsservice.domain;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -9,6 +10,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Getter
+@NoArgsConstructor
 public class Ad {
 
     protected String id;

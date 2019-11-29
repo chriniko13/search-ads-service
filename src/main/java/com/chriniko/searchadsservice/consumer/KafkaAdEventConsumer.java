@@ -36,7 +36,7 @@ public class KafkaAdEventConsumer extends AdEventConsumer {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, AdEventDeserializer.class.getName());
 
-        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 300);
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 700);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
@@ -65,7 +65,7 @@ public class KafkaAdEventConsumer extends AdEventConsumer {
                         log.debug("no ad-events consumed from kafka");
                         counter = 0;
                     }
-                    return;
+                    continue;
                 }
 
                 for (ConsumerRecord<String, AdEvent> consumerRecord : consumerRecords) {
@@ -80,7 +80,9 @@ public class KafkaAdEventConsumer extends AdEventConsumer {
             }
 
         } catch (WakeupException error) {
-            // Note: do nothing, we are shutting down.
+            // Note: do nothing, we are shutting down, exception thrown in order to exit loop.
+        } catch (Exception e) {
+            log.error("unknown exception during consumption occurred, message: " + e.getMessage(), e);
         } finally {
             consumer.close();
         }

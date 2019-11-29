@@ -1,7 +1,6 @@
 package com.chriniko.searchadsservice.service;
 
 import com.chriniko.searchadsservice.domain.AdStatistics;
-import com.chriniko.searchadsservice.error.InvalidAdIdException;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +17,7 @@ public class AdStatisticsService {
     public AdStatistics fetch(String adId) {
         AdStatistics adStatistics = adStatisticsByAdId.get(adId);
         if (adStatistics == null) {
-            throw new InvalidAdIdException("no statistics exist for adId: " + adId);
+            return new AdStatistics(); // Note: not calculated yet from kafka consumer (eventual consistent).
         }
         return adStatistics;
     }

@@ -2,6 +2,13 @@ package com.chriniko.searchadsservice.client;
 
 import com.chriniko.searchadsservice.domain.Ad;
 import com.chriniko.searchadsservice.domain.PagedAds;
+import com.chriniko.searchadsservice.dto.AdClickedRequest;
+import com.chriniko.searchadsservice.dto.AdsAppearedOnSearchRequest;
+import com.chriniko.searchadsservice.dto.SearchAdRequest;
+import lombok.Getter;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
@@ -12,21 +19,43 @@ public class ClientAdsSimulator {
 
     private final String serviceUrl;
 
+    @Getter
     private final PagedAds pagedAds;
 
     private int currentDisplayedPage;
+
+    @Getter
     private List<Ad> currentDisplayedAds;
 
     private final RestTemplate restTemplate;
 
-    public ClientAdsSimulator(String serviceUrl, PagedAds pagedAds) {
+    public ClientAdsSimulator(String serviceUrl, String searchText) {
         this.serviceUrl = serviceUrl;
-        this.pagedAds = pagedAds;
+
         this.restTemplate = new RestTemplate();
+
+        this.pagedAds = search(searchText);
 
         currentDisplayedAds = this.pagedAds.getAds().get(0);
         currentDisplayedPage = 0;
+
+        notify(currentDisplayedAds.stream().map(Ad::getId).collect(Collectors.toList()), AdEvent.APPEARED);
     }
+
+    public PagedAds search(String searchText) {
+        SearchAdRequest searchAdRequest = new SearchAdRequest(searchText);
+        ResponseEntity<PagedAds> response = restTemplate.exchange(
+                serviceUrl + "/search-ads",
+                HttpMethod.POST,
+                new HttpEntity<>(searchAdRequest),
+                PagedAds.class
+        );
+        return response.getBody();
+    }
+
+//    public void search(String searchId) {
+//        //TODO...
+//    }
 
     public void clicked(String adId) {
         notify(Collections.singletonList(adId), AdEvent.CLICKED);
@@ -59,15 +88,33 @@ public class ClientAdsSimulator {
 
         switch (adEvent) {
             case CLICKED:
-                //TODO...
+                List<AdClickedRequest> adClickedRequests = adIds.stream().map(id -> new AdClickedRequest(id)).collect(Collectors.toList());
+                for (AdClickedRequest adClickedRequest : adClickedRequests) {
+                    restTemplate.exchange(
+                            serviceUrl + "/search-ads/clicked",
+                            HttpMethod.POST,
+                            new HttpEntity<>(adClickedRequest),
+                            Void.class
+                    );
+                }
+
+
                 break;
 
             case APPEARED:
-                //TODO...
+                AdsAppearedOnSearchRequest adsAppearedOnSearchRequest = new AdsAppearedOnSearchRequest(adIds);
+                restTemplate.exchange(
+                        serviceUrl + "/search-ads/appeared",
+                        HttpMethod.POST,
+                        new HttpEntity<>(adsAppearedOnSearchRequest),
+                        Void.class
+                );
                 break;
         }
 
     }
+
+    // ---
 
     enum AdEvent {
         CLICKED, APPEARED

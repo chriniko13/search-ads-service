@@ -1,5 +1,7 @@
 package com.chriniko.searchadsservice.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -18,6 +20,13 @@ public class PagedAds {
         this.totalPages = totalPages;
         this.pageSize = pageSize;
         this.ads = new ArrayList<>(totalPages);
+    }
+
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public PagedAds(@JsonProperty("totalPages") int totalPages, @JsonProperty("pageSize") int pageSize, @JsonProperty("ads") List<List<Ad>> ads) {
+        this.totalPages = totalPages;
+        this.pageSize = pageSize;
+        this.ads = ads;
     }
 
     public List<String> allAdIds() {

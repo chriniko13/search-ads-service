@@ -14,11 +14,15 @@ public class AdStatistics {
 
     private long includedInSearchCount = 0;
     private long appearedOnSearchCount = 0;
-    private long clickedCount = 0;
+    private long clickedCountFromSearch = 0;
+    private long clickedCountFromCampaign = 0;
 
+    public void incrementClicksFromSearch() {
+        clickedCountFromSearch++;
+    }
 
-    public void incrementClicks() {
-        clickedCount++;
+    public void incrementClicksFromCampaign() {
+        clickedCountFromCampaign++;
     }
 
     public void incrementAppearedOnSearches() {

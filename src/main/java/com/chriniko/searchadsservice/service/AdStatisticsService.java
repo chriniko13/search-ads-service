@@ -1,5 +1,6 @@
 package com.chriniko.searchadsservice.service;
 
+import com.chriniko.searchadsservice.domain.AdClickSource;
 import com.chriniko.searchadsservice.domain.AdStatistics;
 import org.springframework.stereotype.Service;
 
@@ -22,10 +23,15 @@ public class AdStatisticsService {
         return adStatistics;
     }
 
-    public void clicked(String adId) {
+    public void clicked(String adId, AdClickSource source) {
         adStatisticsByAdId.compute(adId, (_adId, adStatistics) -> {
             adStatistics = ensureStatisticsExist(adStatistics);
-            adStatistics.incrementClicks();
+
+            if (source == AdClickSource.SEARCH) {
+                adStatistics.incrementClicksFromSearch();
+            } else {
+                adStatistics.incrementClicksFromCampaign();
+            }
 
             return adStatistics;
         });

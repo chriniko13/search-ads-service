@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class ClientAdsSimulator {
@@ -57,8 +58,11 @@ public class ClientAdsSimulator {
 //        //TODO...
 //    }
 
-    public void clicked(String adId) {
-        notify(Collections.singletonList(adId), AdEvent.CLICKED);
+    public void clicked(String adId, boolean fromCampaign) {
+        notify(
+                Collections.singletonList(adId),
+                fromCampaign ? AdEvent.CLICKED_FROM_CAMPAIGN : AdEvent.CLICKED_FROM_SEARCH
+        );
     }
 
     public void proceedToNextPage() {
@@ -87,8 +91,22 @@ public class ClientAdsSimulator {
     private void notify(List<String> adIds, AdEvent adEvent) {
 
         switch (adEvent) {
-            case CLICKED:
-                List<AdClickedRequest> adClickedRequests = adIds.stream().map(id -> new AdClickedRequest(id)).collect(Collectors.toList());
+            case CLICKED_FROM_CAMPAIGN: {
+                List<AdClickedRequest> adClickedRequests = adIds.stream().map(AdClickedRequest::new).collect(Collectors.toList());
+                for (AdClickedRequest adClickedRequest : adClickedRequests) {
+                    restTemplate.exchange(
+                            serviceUrl + "/search-ads/clicked?campaignUrl=" + "someCampaign" + ThreadLocalRandom.current().nextInt(),
+                            HttpMethod.POST,
+                            new HttpEntity<>(adClickedRequest),
+                            Void.class
+                    );
+                }
+            }
+            break;
+
+
+            case CLICKED_FROM_SEARCH: {
+                List<AdClickedRequest> adClickedRequests = adIds.stream().map(AdClickedRequest::new).collect(Collectors.toList());
                 for (AdClickedRequest adClickedRequest : adClickedRequests) {
                     restTemplate.exchange(
                             serviceUrl + "/search-ads/clicked",
@@ -97,11 +115,10 @@ public class ClientAdsSimulator {
                             Void.class
                     );
                 }
+            }
+            break;
 
-
-                break;
-
-            case APPEARED:
+            case APPEARED: {
                 AdsAppearedOnSearchRequest adsAppearedOnSearchRequest = new AdsAppearedOnSearchRequest(adIds);
                 restTemplate.exchange(
                         serviceUrl + "/search-ads/appeared",
@@ -109,7 +126,8 @@ public class ClientAdsSimulator {
                         new HttpEntity<>(adsAppearedOnSearchRequest),
                         Void.class
                 );
-                break;
+            }
+            break;
         }
 
     }
@@ -117,7 +135,7 @@ public class ClientAdsSimulator {
     // ---
 
     enum AdEvent {
-        CLICKED, APPEARED
+        CLICKED_FROM_SEARCH, CLICKED_FROM_CAMPAIGN, APPEARED
     }
 
 }

@@ -7,6 +7,7 @@ import com.chriniko.searchadsservice.event.AdIncludedInSearchProcessEvent;
 import com.chriniko.searchadsservice.service.AdStatisticsService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nurkiewicz.typeof.TypeOf;
 import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,23 +48,22 @@ public class KafkaAdEventConsumerCoordinator {
             String adId = consumerRecord.key();
             AdEvent adEvent = consumerRecord.value();
 
-            //printConsumedMessage(adEvent);
+            //printConsumedMessage(adEvent); // Note: enable it for debugging purposes.
 
-            if (adEvent instanceof AdAppearedOnSearchResultEvent) {
+            TypeOf.whenTypeOf(adEvent)
 
-                adStatisticsService.appearedOnSearch(adId);
+                    .is(AdAppearedOnSearchResultEvent.class)
+                    .then(adAppearedOnSearchResultEvent -> adStatisticsService.appearedOnSearch(adId))
 
-            } else if (adEvent instanceof AdClickedEvent) {
+                    .is(AdClickedEvent.class)
+                    .then(adClickedEvent -> adStatisticsService.clicked(adId, adClickedEvent.getSource()))
 
-                adStatisticsService.clicked(adId);
+                    .is(AdIncludedInSearchProcessEvent.class).
+                    then(adIncludedInSearchProcessEvent -> adStatisticsService.includedInSearch(adId))
 
-            } else if (adEvent instanceof AdIncludedInSearchProcessEvent) {
-
-                adStatisticsService.includedInSearch(adId);
-
-            } else {
-                log.error("not valid ad-event consumed!");
-            }
+                    .orElse(unknownAdEvent -> {
+                        log.error("not valid ad-event consumed, event type: " + unknownAdEvent.getClass().getName() + ", event: " + unknownAdEvent);
+                    });
         };
 
         String groupIdSuffix = "Coord1";

@@ -72,6 +72,11 @@
             <version>2.3.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.nurkiewicz.typeof</groupId>
+            <artifactId>typeof</artifactId>
+            <version>0.0.1</version>
+        </dependency>
 
 
         <!-- Test Dependencies -->

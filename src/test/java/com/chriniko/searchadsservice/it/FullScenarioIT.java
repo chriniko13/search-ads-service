@@ -16,7 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -44,7 +46,7 @@ public class FullScenarioIT {
 
 
         // given
-        String serviceUrl = "http://localhost:"+port;
+        String serviceUrl = "http://localhost:" + port;
 
 
         // when
@@ -73,13 +75,13 @@ public class FullScenarioIT {
 
                 assertEquals(1, adStatistics.getAppearedOnSearchCount());
                 assertEquals(1, adStatistics.getIncludedInSearchCount());
-                assertEquals(0, adStatistics.getClickedCount());
+                assertEquals(0, adStatistics.getClickedCountFromSearch());
+                assertEquals(0, adStatistics.getClickedCountFromCampaign());
             }
         });
 
 
-
-        // when - then (these ads have been included only not displayed).
+        // when - then (all ads except first/displayed page, have been included only NOT displayed).
         Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
 
             PagedAds pagedAds = clientAdsSimulator.getPagedAds();
@@ -103,17 +105,27 @@ public class FullScenarioIT {
 
                     assertEquals(0, adStatistics.getAppearedOnSearchCount());
                     assertEquals(1, adStatistics.getIncludedInSearchCount());
-                    assertEquals(0, adStatistics.getClickedCount());
+                    assertEquals(0, adStatistics.getClickedCountFromSearch());
+                    assertEquals(0, adStatistics.getClickedCountFromCampaign());
                 }
             }
         });
 
 
-        // when - then (let's click on some ads) //TODO click on other type...
+        // when - then (let's click on some ads)
         int randomPageNumber = ThreadLocalRandom.current().nextInt(0, clientAdsSimulator.getPagedAds().getTotalPages());
         List<Ad> randomAdsSelectedForClicking = clientAdsSimulator.getPagedAds().getAds().get(randomPageNumber);
 
-        randomAdsSelectedForClicking.stream().map(Ad::getId).forEach(clientAdsSimulator::clicked);
+        final Set<String> adsClickedFromCampaign = new LinkedHashSet<>();
+
+        randomAdsSelectedForClicking.stream().map(Ad::getId).forEach(id -> {
+
+            boolean fromCampaign = ThreadLocalRandom.current().nextInt(0, 2) == 1;
+            if (fromCampaign) {
+                adsClickedFromCampaign.add(id);
+            }
+            clientAdsSimulator.clicked(id, fromCampaign);
+        });
 
         Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
 
@@ -130,19 +142,67 @@ public class FullScenarioIT {
                 AdStatistics adStatistics = adStatisticsResponseEntity.getBody();
                 assertNotNull(adStatistics);
 
-                assertEquals(1, adStatistics.getClickedCount());
+                if (adsClickedFromCampaign.contains(adId)) {
+                    assertEquals(1, adStatistics.getClickedCountFromCampaign());
+                } else {
+                    assertEquals(1, adStatistics.getClickedCountFromSearch());
+                }
+
             }
         });
 
 
         // when - then (move to next page, recheck statistics)
-        //TODO..
+        clientAdsSimulator.proceedToNextPage();
+        List<Ad> currentDisplayedAdsNextPage = clientAdsSimulator.getCurrentDisplayedAds();
+
+        Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
+
+            for (Ad notPageDisplayedAd : currentDisplayedAdsNextPage) {
+
+                String adId = notPageDisplayedAd.getId();
+
+                ResponseEntity<AdStatistics> adStatisticsResponseEntity = restTemplate.exchange(
+                        serviceUrl + "/ad-statistics/" + adId,
+                        HttpMethod.GET,
+                        null,
+                        AdStatistics.class
+                );
+                AdStatistics adStatistics = adStatisticsResponseEntity.getBody();
+                assertNotNull(adStatistics);
+
+                assertEquals(1, adStatistics.getAppearedOnSearchCount());
+                assertEquals(1, adStatistics.getIncludedInSearchCount());
+            }
 
 
-        // when - then (move to previous page, recheck statistics)
-        //TODO..
+        });
 
-        assertEquals(1, 2);
+
+        // when - then (move to previous page, recheck statistics, counter of appeared on search and included in search should be the same)
+        clientAdsSimulator.proceedToPreviousPage();
+        List<Ad> currentDisplayedAdsFromPreviousPage = clientAdsSimulator.getCurrentDisplayedAds();
+        Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
+
+            for (Ad notPageDisplayedAd : currentDisplayedAdsFromPreviousPage) {
+
+                String adId = notPageDisplayedAd.getId();
+
+                ResponseEntity<AdStatistics> adStatisticsResponseEntity = restTemplate.exchange(
+                        serviceUrl + "/ad-statistics/" + adId,
+                        HttpMethod.GET,
+                        null,
+                        AdStatistics.class
+                );
+                AdStatistics adStatistics = adStatisticsResponseEntity.getBody();
+                assertNotNull(adStatistics);
+
+                assertEquals(1, adStatistics.getAppearedOnSearchCount());
+                assertEquals(1, adStatistics.getIncludedInSearchCount());
+            }
+
+        });
+
     }
 
 }

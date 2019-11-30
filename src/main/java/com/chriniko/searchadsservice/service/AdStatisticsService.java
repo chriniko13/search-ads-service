@@ -5,6 +5,7 @@ import com.chriniko.searchadsservice.domain.AdStatistics;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 @Service
 public class AdStatisticsService {
@@ -38,20 +39,17 @@ public class AdStatisticsService {
     }
 
     public void includedInSearch(String adId) {
-        adStatisticsByAdId.compute(adId, (_adId, adStatistics) -> {
-            adStatistics = ensureStatisticsExist(adStatistics);
-            adStatistics.incrementIncludedInSearches();
-
-            return adStatistics;
-        });
+        updateStatistics(adId, AdStatistics::incrementIncludedInSearches);
     }
 
     public void appearedOnSearch(String adId) {
+        updateStatistics(adId, AdStatistics::incrementAppearedOnSearches);
+    }
+
+    private void updateStatistics(String adId, Consumer<AdStatistics> adStatisticsConsumer) {
         adStatisticsByAdId.compute(adId, (_adId, adStatistics) -> {
-
             adStatistics = ensureStatisticsExist(adStatistics);
-            adStatistics.incrementAppearedOnSearches();
-
+            adStatisticsConsumer.accept(adStatistics);
             return adStatistics;
         });
     }

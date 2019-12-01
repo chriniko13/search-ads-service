@@ -229,10 +229,12 @@ public class FullScenarioIT {
 
             long totalThreadCpuTime = threadMXBean.getCurrentThreadCpuTime() - startThreadCpuTime;
             long totalThreadUserTime = threadMXBean.getCurrentThreadUserTime() - startThreadUserTime;
+            long totalThreadSystemTime = totalThreadCpuTime - totalThreadUserTime;
 
             System.out.println("\n\n~~~~~~~~~~~~~~~~~~~~" + Thread.currentThread().getName());
             System.out.println("total thread cpu time (ms): " + TimeUnit.MILLISECONDS.convert(totalThreadCpuTime, TimeUnit.NANOSECONDS));
             System.out.println("total thread user time (ms): " + TimeUnit.MILLISECONDS.convert(totalThreadUserTime, TimeUnit.NANOSECONDS));
+            System.out.println("total thread system time (ms): " + TimeUnit.MILLISECONDS.convert(totalThreadSystemTime, TimeUnit.NANOSECONDS));
 
         }
     }

@@ -19,9 +19,7 @@ import java.util.stream.IntStream;
 
 /*
 
- Important Note: the best would be to use JMH for benchmark/torture test, but time flies...
-                 so by using this naive torture test and a tool like a VisualVM we can get some insights from the app.
-
+ Important Note: the best would be to use JMH for benchmark/torture test.
 
  */
 
@@ -44,7 +42,7 @@ public class NaiveTortureScenarioIT {
     public void test() {
 
         // given
-        int noOfClients = 300;
+        int noOfClients = 200;
         ExecutorService workerPool = Executors.newFixedThreadPool(noOfClients);
 
         String serviceUrl = "http://localhost:" + port;
@@ -72,7 +70,7 @@ public class NaiveTortureScenarioIT {
         // then
         clientSimulations.forEach(simulation -> {
             try {
-                simulation.get(20, TimeUnit.SECONDS);
+                simulation.get(40, TimeUnit.SECONDS);
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 throw new RuntimeException(e);
             }

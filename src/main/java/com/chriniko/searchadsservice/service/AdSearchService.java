@@ -22,12 +22,12 @@ public class AdSearchService implements UserSessionTtlAware {
 
     private final ConcurrentHashMap.KeySetView<String, Boolean> generatedAdIds = ConcurrentHashMap.newKeySet();
 
-    private final ConcurrentHashMap<String /*sessionId*/, SearchPreferences> searchPreferencesBySessionId;
+    private final ConcurrentHashMap<String /*sessionId*/, ClientSearchState> clientSearchStateBySessionId;
 
     @Autowired
     public AdSearchService(UserSessionService userSessionService) {
         searchesBySearchId = new ConcurrentHashMap<>();
-        searchPreferencesBySessionId = new ConcurrentHashMap<>();
+        clientSearchStateBySessionId = new ConcurrentHashMap<>();
         this.userSessionService = userSessionService;
     }
 
@@ -84,55 +84,39 @@ public class AdSearchService implements UserSessionTtlAware {
 
     private SearchResult scrolling(String sessionId, String searchId, int offset, int size) {
 
+
         Search search = searchesBySearchId.get(searchId);
-        SearchPreferences userSearchPreferences = searchPreferencesBySessionId.get(sessionId);
 
-        if (userSearchPreferences.same(size)) {
+        Set<Ad> adsToDisplay = search.getAds(offset, size);
 
-            Set<Ad> ads = search.getAds(offset, size);
+        ClientSearchState clientSearchState = clientSearchStateBySessionId.get(sessionId);
 
-            userSearchPreferences.update(offset, size);
+        Set<String> adIdsAppearedOnSearchUntilNow = clientSearchState.getAdIdsAppearedOnSearch();
 
-            SearchAdResponse searchAdResponse = new SearchAdResponse(searchId,
-                    search.getNumberOfResults(),
-                    offset, size, search.getTotalPages(size),
-                    ads);
+        // Note: find which have not appeared and fire only these.
+        final Set<String> adIdsToFireAppearedOnSearch = new LinkedHashSet<>();
+        for (Ad ad : adsToDisplay) {
+            String id = ad.getId();
 
-            return new SearchResult(
-                    searchAdResponse,
-                    AdEventsToTriggerHolder.initForAdIdsAppearedOnSearch(
-                            ads.stream().map(Ad::getId).collect(Collectors.toSet())
-                    ),
-                    sessionId
-            );
-
-        } else { // Note: user changed page size, should recalculate....
-
-            int previousOffset = userSearchPreferences.getOffset();
-            int previousSize = userSearchPreferences.getSize();
-
-            Set<Ad> adsDisplayedPreviousTime = search.getAds(previousOffset, previousSize);
-            Set<Ad> adsToDisplay = search.getAds(offset, size);
-
-            final Set<String> adIdsAppearedOnSearch = new LinkedHashSet<>();
-            for (Ad ad : adsToDisplay) {
-                if (!adsDisplayedPreviousTime.contains(ad)) {
-                    adIdsAppearedOnSearch.add(ad.getId());
-                }
+            if (!adIdsAppearedOnSearchUntilNow.contains(id)) {
+                adIdsToFireAppearedOnSearch.add(id);
             }
-
-            SearchAdResponse response = new SearchAdResponse(searchId,
-                    search.getNumberOfResults(),
-                    offset, size, search.getTotalPages(size),
-                    adsToDisplay
-            );
-
-            return new SearchResult(
-                    response,
-                    AdEventsToTriggerHolder.initForAdIdsAppearedOnSearch(adIdsAppearedOnSearch),
-                    sessionId
-            );
         }
+
+        clientSearchState.addAdIdsAppearedOnSearch(adIdsToFireAppearedOnSearch);
+
+
+        SearchAdResponse response = new SearchAdResponse(searchId,
+                search.getNumberOfResults(),
+                offset, size, search.getTotalPages(size),
+                adsToDisplay
+        );
+
+        return new SearchResult(
+                response,
+                AdEventsToTriggerHolder.initForAdIdsAppearedOnSearch(adIdsToFireAppearedOnSearch),
+                sessionId
+        );
     }
 
 
@@ -141,8 +125,15 @@ public class AdSearchService implements UserSessionTtlAware {
         Set<Ad> ads = search.getAds(offset, size);
         List<Ad> allAds = search.getAds();
 
-        SearchPreferences searchPreferences = new SearchPreferences(search.getSearchId(), offset, size);
-        searchPreferencesBySessionId.put(sessionId, searchPreferences);
+        Set<String> adIdsAppearedOnSearch = ads.stream().map(Ad::getId).collect(Collectors.toSet());
+        Set<String> adIdsIncludedInSearch = allAds.stream().map(Ad::getId).collect(Collectors.toSet());
+
+
+        ClientSearchState clientSearchState = new ClientSearchState(search.getSearchId());
+        clientSearchState.addAdIdsAppearedOnSearch(adIdsAppearedOnSearch);
+        clientSearchState.addAdIdsIncludedInSearch(adIdsIncludedInSearch);
+
+        clientSearchStateBySessionId.put(sessionId, clientSearchState);
 
         SearchAdResponse searchAdResponse = new SearchAdResponse(search.getSearchId(),
                 search.getNumberOfResults(),
@@ -152,10 +143,7 @@ public class AdSearchService implements UserSessionTtlAware {
 
         return new SearchResult(
                 searchAdResponse,
-                AdEventsToTriggerHolder.init(
-                        ads.stream().map(Ad::getId).collect(Collectors.toSet()),
-                        allAds.stream().map(Ad::getId).collect(Collectors.toSet())
-                ),
+                AdEventsToTriggerHolder.init(adIdsAppearedOnSearch, adIdsIncludedInSearch),
                 sessionId
         );
     }
@@ -164,6 +152,6 @@ public class AdSearchService implements UserSessionTtlAware {
     public void onApplicationEvent(UserSessionTtlAwareEvent userSessionTtlAwareEvent) {
 
         String sessionIdExpired = userSessionTtlAwareEvent.getSessionId();
-        searchPreferencesBySessionId.remove(sessionIdExpired);
+        clientSearchStateBySessionId.remove(sessionIdExpired);
     }
 }

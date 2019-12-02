@@ -1,5 +1,6 @@
 package com.chriniko.searchadsservice.service;
 
+import com.chriniko.searchadsservice.domain.ClientSearchState;
 import com.chriniko.searchadsservice.domain.Search;
 import com.chriniko.searchadsservice.domain.SearchResult;
 import com.chriniko.searchadsservice.dto.SearchAdResponse;
@@ -56,6 +57,13 @@ class AdSearchServiceTest {
         Set<String> generatedAdIds = (Set<String>) generatedAdIdsField.get(service);
 
         assertEquals(searchAdResponse.getNumberOfResults(), generatedAdIds.size());
+
+
+        Field clientSearchStateBySessionIdField = ReflectionUtils.findField(AdSearchService.class, "clientSearchStateBySessionId");
+        clientSearchStateBySessionIdField.setAccessible(true);
+        Map<String, ClientSearchState> clientSearchStateBySessionId = (Map<String, ClientSearchState>) clientSearchStateBySessionIdField.get(service);
+
+        assertNotNull(clientSearchStateBySessionId.get(sessionId));
     }
 
 

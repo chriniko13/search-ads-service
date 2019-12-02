@@ -43,7 +43,7 @@ public class NaiveTortureScenarioIT {
     private AdSearchService adSearchService;
 
     @Test
-    public void test() {
+    void test() {
 
         // given
         int noOfClients = 200;

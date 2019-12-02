@@ -7,6 +7,7 @@ import com.chriniko.searchadsservice.domain.AdStatistics;
 import com.chriniko.searchadsservice.domain.Search;
 import com.chriniko.searchadsservice.service.AdSearchService;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,7 @@ public class FullScenarioIT {
     @Autowired
     private AdSearchService adSearchService;
 
+    @DisplayName("full scenario integration test")
     @Test
     public void main_func_works_as_expected() throws Exception {
 
@@ -221,53 +223,37 @@ public class FullScenarioIT {
             });
 
 
-            // when - then
+            // when - then, revisiting page does not affect statistics because we keep track of user/client navigation based on ttl-expire.
+            for (int i = 0; i < 2; i++) {
 
-            /*
-                Note: now we will test the change of page size from the user and the effect of this to the ad-events.
-
-                Example:
-
-                    * previous navigation:
-                         offset: 0       size: 10 -->   it means that the first 10 results [0...9] will have events for: {included_in=1, appeared_on=1}
+                // dummy action in order to move through the results...
+                randomOffset = ThreadLocalRandom.current().nextInt(1, totalPages);
+                clientAdsSimulator.search(randomOffset);
 
 
-                    * navigation to perform (resizing):
-                         offset: 1       size: 5  -->   it means that the first 5 results [0...4] has been displayed from the previous navigation due to resizing from user,
-                                                        so it means that the events should be the same: {included_in=1, appeared_on=1}
+                List<Ad> adsRequestedAgain = clientAdsSimulator.search(0, 10);
 
-             */
+                Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
 
-            int halfPageSize = clientAdsSimulator.getSize() / 2;
+                    for (Ad ad : adsRequestedAgain) {
 
-            //TODO....
+                        String adId = ad.getId();
 
+                        ResponseEntity<AdStatistics> adStatisticsResponseEntity = restTemplate.exchange(
+                                serviceUrl + "/ad-statistics/" + adId,
+                                HttpMethod.GET,
+                                null,
+                                AdStatistics.class
+                        );
+                        AdStatistics adStatistics = adStatisticsResponseEntity.getBody();
+                        assertNotNull(adStatistics);
 
-//
-//
-//            // when - then (move to previous page, recheck statistics, counter of appeared on search and included in search should be the same)
-//            clientAdsSimulator.proceedToPreviousPage();
-//            List<Ad> currentDisplayedAdsFromPreviousPage = clientAdsSimulator.getCurrentDisplayedAds();
-//            Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
-//
-//                for (Ad notPageDisplayedAd : currentDisplayedAdsFromPreviousPage) {
-//
-//                    String adId = notPageDisplayedAd.getId();
-//
-//                    ResponseEntity<AdStatistics> adStatisticsResponseEntity = restTemplate.exchange(
-//                            serviceUrl + "/ad-statistics/" + adId,
-//                            HttpMethod.GET,
-//                            null,
-//                            AdStatistics.class
-//                    );
-//                    AdStatistics adStatistics = adStatisticsResponseEntity.getBody();
-//                    assertNotNull(adStatistics);
-//
-//                    assertEquals(1, adStatistics.getAppearedOnSearchCount());
-//                    assertEquals(1, adStatistics.getIncludedInSearchCount());
-//                }
-//
-//            });
+                        assertEquals(1, adStatistics.getAppearedOnSearchCount()); // Note: should be the same, see Important Note 1
+                        assertEquals(1, adStatistics.getIncludedInSearchCount());
+                    }
+
+                });
+            }
 
         } finally {
 

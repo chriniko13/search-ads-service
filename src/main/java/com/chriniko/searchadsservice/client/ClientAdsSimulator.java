@@ -108,20 +108,6 @@ public class ClientAdsSimulator {
         currentDisplayedAds = search(searchId, sessionId, offset + 1, size);
     }
 
-
-    //TODO needs revisit...
-    public void proceedToPreviousPage() {
-        // Note: if we are on the first page, exit.
-        if (offset == 0) {
-            return;
-        }
-
-        offset--;
-//        currentDisplayedAds = this.pagedAds.getAds().get(offset);
-        // Important Note: we have visited this page, so we do not fire again events - business constraint.
-    }
-
-
     private List<Ad> extractResult(ResponseEntity<SearchAdResponse> response) {
         SearchAdResponse searchAdResponse = response.getBody();
 

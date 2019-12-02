@@ -3,6 +3,7 @@ package com.chriniko.searchadsservice.service;
 import com.chriniko.searchadsservice.domain.*;
 import com.chriniko.searchadsservice.dto.SearchAdResponse;
 import com.chriniko.searchadsservice.error.InvalidAdIdException;
+import com.chriniko.searchadsservice.event.internal.UserSessionTtlAwareEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-public class AdSearchService {
+public class AdSearchService implements UserSessionTtlAware {
 
     private final UserSessionService userSessionService;
 
@@ -21,14 +22,15 @@ public class AdSearchService {
 
     private final ConcurrentHashMap.KeySetView<String, Boolean> generatedAdIds = ConcurrentHashMap.newKeySet();
 
-    private final ConcurrentHashMap<String /*sessionId*/, SearchPreferences> searchPreferencesBySessionId; //TODO problem with expire here...
+    private final ConcurrentHashMap<String /*sessionId*/, SearchPreferences> searchPreferencesBySessionId;
 
     @Autowired
     public AdSearchService(UserSessionService userSessionService) {
         searchesBySearchId = new ConcurrentHashMap<>();
-        searchPreferencesBySessionId = new ConcurrentHashMap<String, SearchPreferences>();
+        searchPreferencesBySessionId = new ConcurrentHashMap<>();
         this.userSessionService = userSessionService;
     }
+
 
     public void isValidAdId(String adId) {
         if (!generatedAdIds.contains(adId)) {
@@ -156,5 +158,12 @@ public class AdSearchService {
                 ),
                 sessionId
         );
+    }
+
+    @Override
+    public void onApplicationEvent(UserSessionTtlAwareEvent userSessionTtlAwareEvent) {
+
+        String sessionIdExpired = userSessionTtlAwareEvent.getSessionId();
+        searchPreferencesBySessionId.remove(sessionIdExpired);
     }
 }

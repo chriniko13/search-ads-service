@@ -1,5 +1,6 @@
 package com.chriniko.searchadsservice.domain;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +12,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Getter
 @NoArgsConstructor
+
+@EqualsAndHashCode(of = {"id"})
 public class Ad {
 
     protected String id;

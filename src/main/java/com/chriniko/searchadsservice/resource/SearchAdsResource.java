@@ -1,10 +1,11 @@
 package com.chriniko.searchadsservice.resource;
 
-import com.chriniko.searchadsservice.domain.PagedAds;
-import com.chriniko.searchadsservice.domain.Search;
+import com.chriniko.searchadsservice.domain.AdEventsToTriggerHolder;
+import com.chriniko.searchadsservice.domain.SearchResult;
 import com.chriniko.searchadsservice.dto.AdClickedRequest;
 import com.chriniko.searchadsservice.dto.AdsAppearedOnSearchRequest;
 import com.chriniko.searchadsservice.dto.SearchAdRequest;
+import com.chriniko.searchadsservice.dto.SearchAdResponse;
 import com.chriniko.searchadsservice.service.AdEventTriggerService;
 import com.chriniko.searchadsservice.service.AdSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,8 @@ import java.util.List;
 @RequestMapping("/search-ads")
 public class SearchAdsResource {
 
+    public static final int PAGE_SIZE = 10;
+
     private final AdSearchService adSearchService;
     private final AdEventTriggerService adEventTriggerService;
 
@@ -35,16 +38,32 @@ public class SearchAdsResource {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public @ResponseBody HttpEntity<PagedAds> search(@RequestBody @Valid SearchAdRequest req) {
+    public @ResponseBody
+    HttpEntity<SearchAdResponse> search(@RequestHeader(name = "sessionId", required = false) String sessionId,
+
+                                        @RequestParam(name = "searchId", required = false) String searchId,
+                                        @RequestParam(name = "offset", required = true, defaultValue = "0") int offset,
+                                        @RequestParam(name = "size", required = true, defaultValue = "" + PAGE_SIZE) int size,
+
+                                        @RequestBody @Valid SearchAdRequest req) {
 
         @NotEmpty String text = req.getText();
-        Search search = adSearchService.process(text);
 
-        PagedAds pagedAds = search.getPagedAds();
-        List<String> allAdIds = pagedAds.allAdIds();
-        adEventTriggerService.adsIncluded(allAdIds);
+        SearchResult searchResult = adSearchService.process(sessionId,
+                searchId, offset, size,
+                text
+        );
 
-        return ResponseEntity.ok(pagedAds);
+        AdEventsToTriggerHolder adEventsToTriggerHolder = searchResult.getAdEventsToTriggerHolder();
+        adEventTriggerService.adsAppeared(
+                adEventsToTriggerHolder.getAdIdsAppearedOnSearch()
+        );
+
+        adEventTriggerService.adsIncluded(
+                adEventsToTriggerHolder.getAdIdsIncludedInSearch()
+        );
+
+        return ResponseEntity.ok(searchResult.getSearchAdResponse());
     }
 
     @PostMapping(
@@ -52,8 +71,9 @@ public class SearchAdsResource {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @RequestMapping("/clicked")
-    public @ResponseBody HttpEntity<Void> fireAdClickedEvent(@RequestBody @Valid AdClickedRequest req,
-                                                             @RequestParam(name = "campaignUrl", required = false) String campaignUrl) {
+    public @ResponseBody
+    HttpEntity<Void> fireAdClickedEvent(@RequestBody @Valid AdClickedRequest req,
+                                        @RequestParam(name = "campaignUrl", required = false) String campaignUrl) {
 
         @NotEmpty String adId = req.getAdId();
         adSearchService.isValidAdId(adId);
@@ -68,7 +88,8 @@ public class SearchAdsResource {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @RequestMapping("/appeared")
-    public @ResponseBody HttpEntity<Void> fireAdsAppearedOnSearchEvent(@RequestBody @Valid AdsAppearedOnSearchRequest req) {
+    public @ResponseBody
+    HttpEntity<Void> fireAdsAppearedOnSearchEvent(@RequestBody @Valid AdsAppearedOnSearchRequest req) {
 
         @NotEmpty List<@NotEmpty String> adIds = req.getAdIds();
         adSearchService.isValidAdId(adIds);

@@ -1,14 +1,12 @@
 package com.chriniko.searchadsservice.client;
 
 import com.chriniko.searchadsservice.domain.Ad;
-import com.chriniko.searchadsservice.domain.PagedAds;
 import com.chriniko.searchadsservice.dto.AdClickedRequest;
 import com.chriniko.searchadsservice.dto.AdsAppearedOnSearchRequest;
 import com.chriniko.searchadsservice.dto.SearchAdRequest;
 import lombok.Getter;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
@@ -16,14 +14,14 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+//TODO needs fixes...
+
 public class ClientAdsSimulator {
 
     private final String serviceUrl;
 
-    @Getter
-    private final PagedAds pagedAds;
-
-    private int currentDisplayedPage;
+    private int offset;
+    private int size;
 
     @Getter
     private List<Ad> currentDisplayedAds;
@@ -35,23 +33,25 @@ public class ClientAdsSimulator {
 
         this.restTemplate = new RestTemplate();
 
-        this.pagedAds = search(searchText);
+        this.offset = 0;
+        this.size = 10;
 
-        currentDisplayedAds = this.pagedAds.getAds().get(0);
-        currentDisplayedPage = 0;
+        this.currentDisplayedAds = search(searchText);
 
         notify(currentDisplayedAds.stream().map(Ad::getId).collect(Collectors.toList()), AdEvent.APPEARED);
     }
 
-    public PagedAds search(String searchText) {
+    public List<Ad> search(String searchText) {
         SearchAdRequest searchAdRequest = new SearchAdRequest(searchText);
-        ResponseEntity<PagedAds> response = restTemplate.exchange(
-                serviceUrl + "/search-ads",
-                HttpMethod.POST,
-                new HttpEntity<>(searchAdRequest),
-                PagedAds.class
-        );
-        return response.getBody();
+//        ResponseEntity<PagedAds> response = restTemplate.exchange(
+//                serviceUrl + "/search-ads",
+//                HttpMethod.POST,
+//                new HttpEntity<>(searchAdRequest),
+//                PagedAds.class
+//        );
+//        return response.getBody();
+
+        return null;
     }
 
 //    public void search(String searchId) {
@@ -67,24 +67,24 @@ public class ClientAdsSimulator {
 
     public void proceedToNextPage() {
         // Note: if we are on the last page, exit.
-        if (currentDisplayedPage >= pagedAds.getAds().size() - 1) {
-            return;
-        }
+//        if (offset >= pagedAds.getAds().size() - 1) {
+//            return;
+//        }
 
-        currentDisplayedPage++;
-        currentDisplayedAds = this.pagedAds.getAds().get(currentDisplayedPage);
+        offset++;
+//        currentDisplayedAds = this.pagedAds.getAds().get(offset);
 
         notify(currentDisplayedAds.stream().map(Ad::getId).collect(Collectors.toList()), AdEvent.APPEARED);
     }
 
     public void proceedToPreviousPage() {
         // Note: if we are on the first page, exit.
-        if (currentDisplayedPage == 0) {
+        if (offset == 0) {
             return;
         }
 
-        currentDisplayedPage--;
-        currentDisplayedAds = this.pagedAds.getAds().get(currentDisplayedPage);
+        offset--;
+//        currentDisplayedAds = this.pagedAds.getAds().get(offset);
         // Important Note: we have visited this page, so we do not fire again events - business constraint.
     }
 

@@ -8,6 +8,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 
@@ -57,5 +58,12 @@ public class KafkaAdEventProducer implements AdEventProducer {
                 });
 
         return cf;
+    }
+
+    @Override
+    public CompletableFuture<Void> send(List<? extends AdEvent> events) {
+        return CompletableFuture.allOf(
+                events.stream().map(this::send).toArray(CompletableFuture[]::new)
+        );
     }
 }

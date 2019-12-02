@@ -1,11 +1,13 @@
 package com.chriniko.searchadsservice.domain;
 
+import com.chriniko.searchadsservice.error.SearchPreferenceException;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SearchTest {
 
@@ -17,34 +19,80 @@ class SearchTest {
         String searchText = "test-search-text";
 
         for (int run = 0; run < 5; run++) {
+            System.out.println();
 
             // when
-            Search search = new Search(searchText, pageSize);
+            Search search = new Search(searchText);
             int numberOfResults = search.getNumberOfResults();
 
             // then
-            PagedAds pagedAds = search.getPagedAds();
-
-            int totalAds = 0;
-            for (List<Ad> ads : pagedAds.getAds()) {
-                totalAds += ads.size();
-            }
-            System.out.printf("totalAds = %d, numberOfResults = %d, pageSize = %d, totalPages = %d\n",
-                    totalAds, numberOfResults, search.getPagedAds().getPageSize(), search.getPagedAds().getTotalPages());
-
-            assertEquals(totalAds, numberOfResults);
-
-            assertEquals(search.getPagedAds().getAds().size(), search.getPagedAds().getTotalPages());
-
-            assertEquals(searchText, search.getSearchText());
-            assertEquals(pageSize, search.getPagedAds().getPageSize());
-
-            assertEquals(Math.ceil( (double)numberOfResults / pageSize), search.getPagedAds().getTotalPages());
+            List<Ad> ads = search.getAds();
+            assertEquals(numberOfResults, ads.size());
 
             assertNotNull(search.getCreatedAt());
             assertNotNull(search.getSearchId());
+            assertNotNull(search.getSearchText());
+
+
+            Set<Ad> diplayedAds = search.getAds(0, pageSize);
+            assertEquals(pageSize, diplayedAds.size());
+
+
+            int totalPages = search.getTotalPages(pageSize);
+            List<Ad> accumulator = new LinkedList<>();
+            for (int offset = 0; offset < totalPages; offset++) {
+                accumulator.addAll(search.getAds(offset, pageSize));
+            }
+            assertEquals(numberOfResults, accumulator.size());
 
         }
 
+    }
+
+    @Test
+    void search_works_as_expected_invalid_size_case() {
+
+
+        // given
+        Search search = new Search("foo");
+
+        try {
+            // when
+            search.getAds(0, -100);
+            fail();
+        } catch (SearchPreferenceException e) { // then
+            assertNotNull(e);
+            assertEquals("not valid size parameter received", e.getMessage());
+        }
+
+    }
+
+    @Test
+    void search_works_as_expected_invalid_offset_case() {
+
+        // given
+        Search search = new Search("foo");
+        int pageSize = 10;
+        int totalPages = search.getTotalPages(pageSize);
+
+
+        try {
+            // when
+            search.getAds(-100, pageSize);
+            fail();
+        } catch (SearchPreferenceException e) { // then
+            assertNotNull(e);
+            assertEquals("not valid offset (-100) parameter received, valid range for offset is: [0, " + (totalPages - 1) + "]", e.getMessage());
+        }
+
+
+        try {
+            // when
+            search.getAds(totalPages, pageSize);
+            fail();
+        } catch (SearchPreferenceException e) { // then
+            assertNotNull(e);
+            assertEquals("not valid offset (" + totalPages + ") parameter received, valid range for offset is: [0, " + (totalPages - 1) + "]", e.getMessage());
+        }
     }
 }

@@ -38,49 +38,49 @@ public class NaiveTortureScenarioIT {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Test
-    public void test() {
-
-        // given
-        int noOfClients = 200;
-        ExecutorService workerPool = Executors.newFixedThreadPool(noOfClients);
-
-        String serviceUrl = "http://localhost:" + port;
-
-        Phaser phaser = new Phaser(noOfClients + 1 /*for the main thread*/);
-
-        // when
-        List<CompletableFuture<Void>> clientSimulations = IntStream.rangeClosed(1, noOfClients)
-                .mapToObj(idx -> new ClientAdsSimulator(serviceUrl, "search something " + idx))
-                .map(clientAdsSimulator -> CompletableFuture.runAsync(() -> {
-
-                            System.out.println(Thread.currentThread().getName() + " --- client simulator just arrived and awaiting signal for work...");
-                            phaser.arriveAndAwaitAdvance(); // Note: workers rendezvous.
-
-                            FullScenarioIT.simulateClientAction(serviceUrl, clientAdsSimulator, restTemplate);
-
-                        }, workerPool)
-                )
-                .collect(Collectors.toList());
-
-
-        phaser.arriveAndDeregister(); // Note: main thread signals workers to start...
-
-
-        // then
-        clientSimulations.forEach(simulation -> {
-            try {
-                simulation.get(40, TimeUnit.SECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-
-        // cleanup
-        workerPool.shutdown();
-
-    }
+//    @Test
+//    public void test() {
+//
+//        // given
+//        int noOfClients = 200;
+//        ExecutorService workerPool = Executors.newFixedThreadPool(noOfClients);
+//
+//        String serviceUrl = "http://localhost:" + port;
+//
+//        Phaser phaser = new Phaser(noOfClients + 1 /*for the main thread*/);
+//
+//        // when
+//        List<CompletableFuture<Void>> clientSimulations = IntStream.rangeClosed(1, noOfClients)
+//                .mapToObj(idx -> new ClientAdsSimulator(serviceUrl, "search something " + idx))
+//                .map(clientAdsSimulator -> CompletableFuture.runAsync(() -> {
+//
+//                            System.out.println(Thread.currentThread().getName() + " --- client simulator just arrived and awaiting signal for work...");
+//                            phaser.arriveAndAwaitAdvance(); // Note: workers rendezvous.
+//
+//                            FullScenarioIT.simulateClientAction(serviceUrl, clientAdsSimulator, restTemplate);
+//
+//                        }, workerPool)
+//                )
+//                .collect(Collectors.toList());
+//
+//
+//        phaser.arriveAndDeregister(); // Note: main thread signals workers to start...
+//
+//
+//        // then
+//        clientSimulations.forEach(simulation -> {
+//            try {
+//                simulation.get(40, TimeUnit.SECONDS);
+//            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+//
+//
+//        // cleanup
+//        workerPool.shutdown();
+//
+//    }
 
 
 }

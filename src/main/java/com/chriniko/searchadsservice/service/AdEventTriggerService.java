@@ -36,7 +36,7 @@ public class AdEventTriggerService {
                 .map(AdAppearedOnSearchResultEvent::new)
                 .collect(Collectors.toList());
 
-        events.forEach(adEventProducer::send);
+        adEventProducer.send(events);
     }
 
     public void adsIncluded(List<String> adIds) {
@@ -45,6 +45,6 @@ public class AdEventTriggerService {
                 .map(AdIncludedInSearchProcessEvent::new)
                 .collect(Collectors.toList());
 
-        events.forEach(adEventProducer::send);
+        adEventProducer.send(events);
     }
 }

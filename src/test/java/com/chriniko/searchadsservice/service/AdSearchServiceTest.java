@@ -1,49 +1,60 @@
 package com.chriniko.searchadsservice.service;
 
-import com.chriniko.searchadsservice.domain.Search;
+import com.chriniko.searchadsservice.domain.SearchResult;
+import com.chriniko.searchadsservice.dto.SearchAdResponse;
 import com.chriniko.searchadsservice.error.InvalidAdIdException;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class AdSearchServiceTest {
 
     @Test
-    void process() {
+    void process_works_as_expected_visitor_scrolling_case() {
 
         // given
         String searchText = "ducati panigale";
-        AdSearchService service = new AdSearchService();
+
+        AdSearchService service = new AdSearchService(getMockedUserSessionService());
+
+        String sessionId = "someSessionId";
+
+        int offset = 1;
+        int size = 10;
+
+        SearchResult searchResult = service.process(sessionId, null, offset, size, searchText);
+        String searchId = searchResult.getSearchAdResponse().getSearchId();
 
 
         // when
-        Search result = service.process(searchText);
+        SearchResult result = service.process(sessionId, searchId, offset, size, searchText);
 
 
         // then
         assertNotNull(result);
-        assertTrue(result.getNumberOfResults() > 0);
 
+        SearchAdResponse searchAdResponse = result.getSearchAdResponse();
 
-        assertEquals(result, service.getSearchesBySearchId().get(result.getSearchId()));
+        assertTrue(searchAdResponse.getNumberOfResults() > 0);
 
-        ConcurrentLinkedQueue<Search> searches = service.getSearchesBySearchText().get(searchText);
-        assertEquals(1, searches.size());
-        assertEquals(result, searches.peek());
-
+        assertNotNull(service.getSearchesBySearchId().get(searchAdResponse.getSearchId()));
 
         ConcurrentHashMap.KeySetView<String, Boolean> generatedAdIds = service.getGeneratedAdIds();
-        assertEquals(result.getNumberOfResults(), generatedAdIds.size());
+        assertEquals(searchAdResponse.getNumberOfResults(), generatedAdIds.size());
     }
+
+
+    //TODO init visit
+
+    //TODO visitor search request
 
     @Test
     void isValidAdId() {
 
         // given
-        AdSearchService service = new AdSearchService();
+        AdSearchService service = new AdSearchService(getMockedUserSessionService());
 
 
         // when
@@ -54,5 +65,14 @@ class AdSearchServiceTest {
             assertTrue(error.getMessage().contains("foobar"));
         }
 
+    }
+
+    private UserSessionService getMockedUserSessionService() {
+        return new UserSessionService() {
+            @Override
+            public String generate() {
+                return "foobar";
+            }
+        };
     }
 }

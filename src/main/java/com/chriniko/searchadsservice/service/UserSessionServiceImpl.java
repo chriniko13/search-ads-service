@@ -55,7 +55,7 @@ public class UserSessionServiceImpl implements UserSessionService {
                 if (secondsSinceSessionCreation >= USER_SESSION_TTL_IN_SECS) {
                     iterator.remove();
 
-                    // Note: maintain state in other components also.
+                    // Note: notify other components to maintain state also.
                     applicationEventPublisher.publishEvent(new UserSessionTtlAwareEvent(this, userSessionId));
                 }
             }

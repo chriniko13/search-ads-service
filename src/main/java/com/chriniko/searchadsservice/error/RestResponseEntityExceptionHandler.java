@@ -20,8 +20,11 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
         return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
     }
 
-    //TODO SearchPreferenceException...
-
+    @ExceptionHandler(value = {SearchPreferenceException.class})
+    protected ResponseEntity<Object> handleSearchPreferenceException(SearchPreferenceException ex, WebRequest request) {
+        String bodyOfResponse = ex.getMessage();
+        return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+    }
 
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex,
@@ -29,9 +32,7 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
                                                              HttpHeaders headers,
                                                              HttpStatus status,
                                                              WebRequest request) {
-
-        log.error("error occurred: "+ ex.getMessage() + ", response body: " + body);
-
+        log.error("error occurred: " + ex.getMessage() + ", response body: " + body);
         return super.handleExceptionInternal(ex, body, headers, status, request);
     }
 }

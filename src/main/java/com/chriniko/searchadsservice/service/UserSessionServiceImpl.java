@@ -15,7 +15,7 @@ import java.util.concurrent.*;
 @Service
 public class UserSessionServiceImpl implements UserSessionService {
 
-    private static final int USER_SESSION_TTL_IN_MINUTES = 3;
+    private static final int USER_SESSION_TTL_IN_SECS = 3 * 60; // Note: 3 minutes.
 
     private final ConcurrentHashMap<String, UserSession> userSessionsById;
 
@@ -48,9 +48,11 @@ public class UserSessionServiceImpl implements UserSessionService {
                 String userSessionId = userSession.getId();
                 Instant created = userSession.getCreated();
 
-                long minutesSinceSessionCreation = Duration.between(created, now).toMinutes();
+                long millisSinceSessionCreation = Duration.between(created, now).toMillis();
 
-                if (minutesSinceSessionCreation >= USER_SESSION_TTL_IN_MINUTES) {
+                long secondsSinceSessionCreation = TimeUnit.SECONDS.convert(millisSinceSessionCreation, TimeUnit.MILLISECONDS);
+
+                if (secondsSinceSessionCreation >= USER_SESSION_TTL_IN_SECS) {
                     iterator.remove();
 
                     // Note: maintain state in other components also.

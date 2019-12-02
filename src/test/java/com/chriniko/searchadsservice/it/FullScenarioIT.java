@@ -158,7 +158,7 @@ public class FullScenarioIT {
 
             int randomOffset = ThreadLocalRandom.current().nextInt(1, totalPages);
 
-            List<Ad> randomAdsSelectedForClicking = clientAdsSimulator.search(randomOffset);
+            List<Ad> randomAdsSelectedForClicking = clientAdsSimulator.scrollThroughSearch(randomOffset);
 
             final Set<String> adsClickedFromCampaign = new LinkedHashSet<>();
 
@@ -228,10 +228,10 @@ public class FullScenarioIT {
 
                 // dummy action in order to move through the results...
                 randomOffset = ThreadLocalRandom.current().nextInt(1, totalPages);
-                clientAdsSimulator.search(randomOffset);
+                clientAdsSimulator.scrollThroughSearch(randomOffset);
 
 
-                List<Ad> adsRequestedAgain = clientAdsSimulator.search(0, 10);
+                List<Ad> adsRequestedAgain = clientAdsSimulator.scrollThroughSearch(0, 10);
 
                 Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
 
@@ -254,6 +254,34 @@ public class FullScenarioIT {
 
                 });
             }
+
+
+            // when - then , as a visitor perform a new search request
+            List<Ad> visitorPerformedNewSearchRequestAds = clientAdsSimulator.search("some other search text to look for");
+
+
+            Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
+
+                for (Ad ad : visitorPerformedNewSearchRequestAds) {
+
+                    String adId = ad.getId();
+
+                    ResponseEntity<AdStatistics> adStatisticsResponseEntity = restTemplate.exchange(
+                            serviceUrl + "/ad-statistics/" + adId,
+                            HttpMethod.GET,
+                            null,
+                            AdStatistics.class
+                    );
+                    AdStatistics adStatistics = adStatisticsResponseEntity.getBody();
+                    assertNotNull(adStatistics);
+
+                    assertEquals(1, adStatistics.getAppearedOnSearchCount());
+                    assertEquals(1, adStatistics.getIncludedInSearchCount());
+                }
+
+
+            });
+
 
         } finally {
 

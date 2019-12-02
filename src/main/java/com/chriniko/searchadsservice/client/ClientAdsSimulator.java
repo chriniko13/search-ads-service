@@ -60,7 +60,26 @@ public class ClientAdsSimulator {
         return extractResult(response);
     }
 
-    public List<Ad> search(String searchId, String sessionId, int offset, int size) {
+    public List<Ad> search(String searchText) {
+        SearchAdRequest searchAdRequest = new SearchAdRequest(searchText);
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.add("sessionId", sessionId);
+
+        String url = UriComponentsBuilder.fromHttpUrl(serviceUrl + "/search-ads")
+                .toUriString();
+
+        ResponseEntity<SearchAdResponse> response = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                new HttpEntity<>(searchAdRequest, httpHeaders),
+                SearchAdResponse.class
+        );
+
+        return extractResult(response);
+    }
+
+    private List<Ad> search(String searchId, String sessionId, int offset, int size) {
         SearchAdRequest searchAdRequest = new SearchAdRequest("");
 
         HttpHeaders httpHeaders = new HttpHeaders();
@@ -82,12 +101,12 @@ public class ClientAdsSimulator {
         return extractResult(response);
     }
 
-    public List<Ad> search(int offsetToUse) {
+    public List<Ad> scrollThroughSearch(int offsetToUse) {
         return search(searchId, sessionId, offsetToUse, size);
     }
 
     // Note: this method is used to simulate the change of page size (and possible offset) from the user/client.
-    public List<Ad> search(int offsetToUse, int sizeToUse) {
+    public List<Ad> scrollThroughSearch(int offsetToUse, int sizeToUse) {
         return search(searchId, sessionId, offsetToUse, sizeToUse);
     }
 

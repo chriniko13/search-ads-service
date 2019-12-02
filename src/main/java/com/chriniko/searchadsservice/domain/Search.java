@@ -34,7 +34,7 @@ public class Search {
         createdAt = Calendar.getInstance().getTime();
     }
 
-    int getTotalPages(int pageSize) {
+    public int getTotalPages(int pageSize) {
         return (int) Math.ceil((double) numberOfResults / pageSize);
     }
 

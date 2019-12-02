@@ -3,7 +3,6 @@ package com.chriniko.searchadsservice.service;
 import com.chriniko.searchadsservice.domain.*;
 import com.chriniko.searchadsservice.dto.SearchAdResponse;
 import com.chriniko.searchadsservice.error.InvalidAdIdException;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,15 +15,13 @@ import java.util.stream.Collectors;
 @Service
 public class AdSearchService {
 
-    @Getter
-    private final ConcurrentHashMap<String /*searchId*/, Search> searchesBySearchId;
-
-    @Getter
-    private final ConcurrentHashMap.KeySetView<String, Boolean> generatedAdIds = ConcurrentHashMap.newKeySet();
-
     private final UserSessionService userSessionService;
 
-    private final ConcurrentHashMap<String /*sessionId*/, SearchPreferences> searchPreferencesBySessionId;
+    private final ConcurrentHashMap<String /*searchId*/, Search> searchesBySearchId;
+
+    private final ConcurrentHashMap.KeySetView<String, Boolean> generatedAdIds = ConcurrentHashMap.newKeySet();
+
+    private final ConcurrentHashMap<String /*sessionId*/, SearchPreferences> searchPreferencesBySessionId; //TODO problem with expire here...
 
     @Autowired
     public AdSearchService(UserSessionService userSessionService) {
@@ -96,13 +93,15 @@ public class AdSearchService {
 
             SearchAdResponse searchAdResponse = new SearchAdResponse(searchId,
                     search.getNumberOfResults(),
-                    offset, size, ads);
+                    offset, size, search.getTotalPages(size),
+                    ads);
 
             return new SearchResult(
                     searchAdResponse,
                     AdEventsToTriggerHolder.initForAdIdsAppearedOnSearch(
                             ads.stream().map(Ad::getId).collect(Collectors.toSet())
-                    )
+                    ),
+                    sessionId
             );
 
         } else { // Note: user changed page size, should recalculate....
@@ -122,12 +121,14 @@ public class AdSearchService {
 
             SearchAdResponse response = new SearchAdResponse(searchId,
                     search.getNumberOfResults(),
-                    offset, size, adsToDisplay
+                    offset, size, search.getTotalPages(size),
+                    adsToDisplay
             );
 
             return new SearchResult(
                     response,
-                    AdEventsToTriggerHolder.initForAdIdsAppearedOnSearch(adIdsAppearedOnSearch)
+                    AdEventsToTriggerHolder.initForAdIdsAppearedOnSearch(adIdsAppearedOnSearch),
+                    sessionId
             );
         }
     }
@@ -136,20 +137,24 @@ public class AdSearchService {
     private SearchResult getFirstSearchResult(int offset, int size, Search search, String sessionId) {
 
         Set<Ad> ads = search.getAds(offset, size);
+        List<Ad> allAds = search.getAds();
 
         SearchPreferences searchPreferences = new SearchPreferences(search.getSearchId(), offset, size);
         searchPreferencesBySessionId.put(sessionId, searchPreferences);
 
         SearchAdResponse searchAdResponse = new SearchAdResponse(search.getSearchId(),
                 search.getNumberOfResults(),
-                offset, size, ads
+                offset, size, search.getTotalPages(size),
+                ads
         );
 
         return new SearchResult(
                 searchAdResponse,
                 AdEventsToTriggerHolder.init(
-                        ads.stream().map(Ad::getId).collect(Collectors.toList())
-                )
+                        ads.stream().map(Ad::getId).collect(Collectors.toSet()),
+                        allAds.stream().map(Ad::getId).collect(Collectors.toSet())
+                ),
+                sessionId
         );
     }
 }

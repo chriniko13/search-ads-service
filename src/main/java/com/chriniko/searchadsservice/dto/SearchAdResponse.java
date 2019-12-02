@@ -17,6 +17,7 @@ public class SearchAdResponse {
 
     private int currentPage;
     private int pageSize;
+    private int totalPages;
 
     private Set<Ad> ads;
 

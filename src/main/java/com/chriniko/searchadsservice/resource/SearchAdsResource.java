@@ -16,13 +16,14 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @RestController
 @RequestMapping("/search-ads")
 public class SearchAdsResource {
 
-    public static final int PAGE_SIZE = 10;
+    private static final int PAGE_SIZE = 10;
 
     private final AdSearchService adSearchService;
     private final AdEventTriggerService adEventTriggerService;
@@ -47,23 +48,19 @@ public class SearchAdsResource {
 
                                         @RequestBody @Valid SearchAdRequest req) {
 
-        @NotEmpty String text = req.getText();
+        @NotNull String text = req.getText();
 
         SearchResult searchResult = adSearchService.process(sessionId,
                 searchId, offset, size,
                 text
         );
 
-        AdEventsToTriggerHolder adEventsToTriggerHolder = searchResult.getAdEventsToTriggerHolder();
-        adEventTriggerService.adsAppeared(
-                adEventsToTriggerHolder.getAdIdsAppearedOnSearch()
-        );
+        fireEvents(searchResult);
 
-        adEventTriggerService.adsIncluded(
-                adEventsToTriggerHolder.getAdIdsIncludedInSearch()
-        );
-
-        return ResponseEntity.ok(searchResult.getSearchAdResponse());
+        return ResponseEntity
+                .ok()
+                .header("sessionId", searchResult.getSessionId())
+                .body(searchResult.getSearchAdResponse());
     }
 
     @PostMapping(
@@ -99,5 +96,17 @@ public class SearchAdsResource {
         return ResponseEntity.ok().build();
     }
 
+    // ---
+
+    private void fireEvents(SearchResult searchResult) {
+        AdEventsToTriggerHolder adEventsToTriggerHolder = searchResult.getAdEventsToTriggerHolder();
+        adEventTriggerService.adsAppeared(
+                adEventsToTriggerHolder.getAdIdsAppearedOnSearch()
+        );
+
+        adEventTriggerService.adsIncluded(
+                adEventsToTriggerHolder.getAdIdsIncludedInSearch()
+        );
+    }
 
 }

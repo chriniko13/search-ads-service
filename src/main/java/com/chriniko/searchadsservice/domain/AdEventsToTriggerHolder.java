@@ -25,10 +25,10 @@ public class AdEventsToTriggerHolder {
         return holder;
     }
 
-    public static AdEventsToTriggerHolder init(List<String> adIds) {
+    public static AdEventsToTriggerHolder init(Set<String> adIdsAppearedOnSearch, Set<String> adIdsIncludedInSearch) {
         AdEventsToTriggerHolder holder = new AdEventsToTriggerHolder();
-        holder.setAdIdsIncludedInSearch(adIds);
-        holder.setAdIdsAppearedOnSearch(adIds);
+        holder.setAdIdsAppearedOnSearch(new ArrayList<>(adIdsAppearedOnSearch));
+        holder.setAdIdsIncludedInSearch(new ArrayList<>(adIdsIncludedInSearch));
         return holder;
     }
 }

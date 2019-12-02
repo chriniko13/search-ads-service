@@ -10,5 +10,5 @@ public class SearchResult {
 
     private SearchAdResponse searchAdResponse;
     private AdEventsToTriggerHolder adEventsToTriggerHolder;
-
+    private String sessionId;
 }

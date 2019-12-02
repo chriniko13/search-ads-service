@@ -4,26 +4,34 @@ import com.chriniko.searchadsservice.domain.Ad;
 import com.chriniko.searchadsservice.dto.AdClickedRequest;
 import com.chriniko.searchadsservice.dto.AdsAppearedOnSearchRequest;
 import com.chriniko.searchadsservice.dto.SearchAdRequest;
+import com.chriniko.searchadsservice.dto.SearchAdResponse;
 import lombok.Getter;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
-//TODO needs fixes...
 
+@Getter
 public class ClientAdsSimulator {
 
     private final String serviceUrl;
 
     private int offset;
     private int size;
+    private int totalPages;
 
-    @Getter
+    private String sessionId;
+    private String searchId;
+
     private List<Ad> currentDisplayedAds;
 
     private final RestTemplate restTemplate;
@@ -36,27 +44,53 @@ public class ClientAdsSimulator {
         this.offset = 0;
         this.size = 10;
 
-        this.currentDisplayedAds = search(searchText);
-
-        notify(currentDisplayedAds.stream().map(Ad::getId).collect(Collectors.toList()), AdEvent.APPEARED);
+        this.currentDisplayedAds = initSearch(searchText);
     }
 
-    public List<Ad> search(String searchText) {
+    public List<Ad> initSearch(String searchText) {
         SearchAdRequest searchAdRequest = new SearchAdRequest(searchText);
-//        ResponseEntity<PagedAds> response = restTemplate.exchange(
-//                serviceUrl + "/search-ads",
-//                HttpMethod.POST,
-//                new HttpEntity<>(searchAdRequest),
-//                PagedAds.class
-//        );
-//        return response.getBody();
 
-        return null;
+        ResponseEntity<SearchAdResponse> response = restTemplate.exchange(
+                serviceUrl + "/search-ads",
+                HttpMethod.POST,
+                new HttpEntity<>(searchAdRequest),
+                SearchAdResponse.class
+        );
+
+        return extractResult(response);
     }
 
-//    public void search(String searchId) {
-//        //TODO...
-//    }
+    public List<Ad> search(String searchId, String sessionId, int offset, int size) {
+        SearchAdRequest searchAdRequest = new SearchAdRequest("");
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.add("sessionId", sessionId);
+
+        String url = UriComponentsBuilder.fromHttpUrl(serviceUrl + "/search-ads")
+                .queryParam("searchId", searchId)
+                .queryParam("offset", offset)
+                .queryParam("size", size)
+                .toUriString();
+
+        ResponseEntity<SearchAdResponse> response = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                new HttpEntity<>(searchAdRequest, httpHeaders),
+                SearchAdResponse.class
+        );
+
+        return extractResult(response);
+    }
+
+    public List<Ad> search(int offsetToUse) {
+        return search(searchId, sessionId, offsetToUse, size);
+    }
+
+    // Note: this method is used to simulate the change of page size (and possible offset) from the user/client.
+    public List<Ad> search(int offsetToUse, int sizeToUse) {
+        return search(searchId, sessionId, offsetToUse, sizeToUse);
+    }
+
 
     public void clicked(String adId, boolean fromCampaign) {
         notify(
@@ -67,16 +101,15 @@ public class ClientAdsSimulator {
 
     public void proceedToNextPage() {
         // Note: if we are on the last page, exit.
-//        if (offset >= pagedAds.getAds().size() - 1) {
-//            return;
-//        }
+        if (offset >= totalPages - 1) {
+            return;
+        }
 
-        offset++;
-//        currentDisplayedAds = this.pagedAds.getAds().get(offset);
-
-        notify(currentDisplayedAds.stream().map(Ad::getId).collect(Collectors.toList()), AdEvent.APPEARED);
+        currentDisplayedAds = search(searchId, sessionId, offset + 1, size);
     }
 
+
+    //TODO needs revisit...
     public void proceedToPreviousPage() {
         // Note: if we are on the first page, exit.
         if (offset == 0) {
@@ -86,6 +119,19 @@ public class ClientAdsSimulator {
         offset--;
 //        currentDisplayedAds = this.pagedAds.getAds().get(offset);
         // Important Note: we have visited this page, so we do not fire again events - business constraint.
+    }
+
+
+    private List<Ad> extractResult(ResponseEntity<SearchAdResponse> response) {
+        SearchAdResponse searchAdResponse = response.getBody();
+
+        this.offset = searchAdResponse.getCurrentPage();
+        this.size = searchAdResponse.getPageSize();
+        this.totalPages = searchAdResponse.getTotalPages();
+        this.sessionId = response.getHeaders().getFirst("sessionId");
+        this.searchId = searchAdResponse.getSearchId();
+
+        return new ArrayList<>(searchAdResponse.getAds());
     }
 
     private void notify(List<String> adIds, AdEvent adEvent) {
@@ -131,6 +177,7 @@ public class ClientAdsSimulator {
         }
 
     }
+
 
     // ---
 

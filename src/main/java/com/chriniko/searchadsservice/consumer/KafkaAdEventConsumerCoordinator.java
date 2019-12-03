@@ -13,6 +13,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.lang.management.ManagementFactory;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
@@ -32,6 +33,8 @@ public class KafkaAdEventConsumerCoordinator {
     private final AdStatisticsService adStatisticsService;
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    private static String JVM_PROCESS_ID = ManagementFactory.getRuntimeMXBean().getName();
 
     @Autowired
     public KafkaAdEventConsumerCoordinator(ExecutorService workerPool, AdStatisticsService adStatisticsService) {
@@ -66,10 +69,8 @@ public class KafkaAdEventConsumerCoordinator {
                     });
         };
 
-        String groupIdSuffix = "Coord1";
-
         for (int i = 0; i < NO_OF_CONSUMERS; i++) {
-            KafkaAdEventConsumer kafkaAdEventConsumer = new KafkaAdEventConsumer(groupIdSuffix, adEventProcessing);
+            KafkaAdEventConsumer kafkaAdEventConsumer = new KafkaAdEventConsumer(JVM_PROCESS_ID, adEventProcessing);
             this.workerPool.submit(kafkaAdEventConsumer);
         }
 

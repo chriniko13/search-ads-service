@@ -61,3 +61,8 @@
     * In order to see unit test coverage open with browser: `target/site/jacoco-ut/index.html`
     * In order to see integration test coverage open with browser: `target/site/jacoco-it/index.html`
     
+    
+#### TODOS
+* Use `Hazelcast(https://hazelcast.com/)` or `Atomix(https://atomix.io/)` for having distributed in memory data structures (due to the fact our service
+  is stateful, we keep track of visited client activity (for a specified time - time-to-live policy - expiration period) in order to fire ad events in a more proper manner) 
+  in case we want to scale and have more than one running instance of our service.

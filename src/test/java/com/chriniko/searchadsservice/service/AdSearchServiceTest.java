@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -66,10 +67,55 @@ class AdSearchServiceTest {
         assertNotNull(clientSearchStateBySessionId.get(sessionId));
     }
 
+    @Test
+    void process_works_as_expected_init_visit_case() {
 
-    //TODO init visit
+        // given
+        String searchText = "ducati panigale";
 
-    //TODO visitor search request
+        AdSearchService service = new AdSearchService(getMockedUserSessionService());
+
+        int offset = 1;
+        int size = 10;
+
+        // when
+        SearchResult searchResult = service.process(null, null, offset, size, searchText);
+
+
+        // then
+        assertNotNull(searchResult.getSessionId());
+
+    }
+
+    @Test
+    void process_works_as_expected_visit_a_page_more_than_one_times_case() {
+
+        // given
+        String searchText = "ducati panigale";
+
+        AdSearchService service = new AdSearchService(getMockedUserSessionService());
+
+        String sessionId = "someSessionId";
+
+        int offset = 1;
+        int size = 10;
+
+        SearchResult searchResult = service.process(sessionId, null, offset, size, searchText);
+        String searchId = searchResult.getSearchAdResponse().getSearchId();
+
+
+        // when
+        SearchResult result = service.process(sessionId, searchId, offset + 1, size, searchText);
+
+
+        // then
+        List<String> adIdsIncludedInSearch = result.getAdEventsToTriggerHolder().getAdIdsIncludedInSearch();
+        assertTrue(adIdsIncludedInSearch.isEmpty());
+
+        List<String> adIdsAppearedOnSearch = result.getAdEventsToTriggerHolder().getAdIdsAppearedOnSearch();
+        assertEquals(10, adIdsAppearedOnSearch.size());
+
+    }
 
     @Test
     void isValidAdId() {

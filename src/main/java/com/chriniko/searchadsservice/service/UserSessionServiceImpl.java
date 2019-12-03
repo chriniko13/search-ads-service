@@ -15,7 +15,8 @@ import java.util.concurrent.*;
 @Service
 public class UserSessionServiceImpl implements UserSessionService {
 
-    private static final int USER_SESSION_TTL_IN_SECS = 3 * 60; // Note: 3 minutes.
+    // Note: volatile in order to mutate it from test to see it works as expected, the best would be to be a config property.
+    private static volatile int USER_SESSION_TTL_IN_SECS = 3 * 60; // Note: 3 minutes.
 
     private final ConcurrentHashMap<String, UserSession> userSessionsById;
 
